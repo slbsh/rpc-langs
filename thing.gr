@@ -1,0 +1,52 @@
+// grain thing.gr
+// author: slab
+module Calc
+from "string" include String
+from "array" include Array
+from "number" include Number
+
+from "result" include Result
+
+from "buffer" include Buffer
+from "wasi/file" include File
+from "wasi/process" include Process
+
+// grain doesnt have a std impl of this :(
+// this code is bad cause it busy loops but what can ye do
+let read_line = () => {
+	let buf = Buffer.make(128)
+	while (true) {
+		match (File.fdRead(File.stdin, 1)) {
+			Ok((b"\n", _)) => {
+				return Ok(Buffer.toString(buf))
+			},
+			Ok((bytes, _)) => {
+				Buffer.addBytes(bytes, buf)
+			},
+			Err(_) => void,
+		}
+		Result.unwrap(Process.schedYield())
+	}
+	return Err("failed to read line")
+}
+
+while (true) {
+	let in = String.split(" ", String.trim(Result.unwrap(read_line())))
+
+	let nums = Array.map((a) => Result.unwrap(Number.parse(a)), Array.slice(1, in))
+
+	if (Array.length(nums) < 2) continue
+
+	let result = match (in[0]) {
+		"+" => Array.reduce((a, b) => a + b, 0, nums),
+		"-" => Array.reduce((a, b) => a - b, 0, nums),
+		"*" => Array.reduce((a, b) => a * b, 1, nums),
+		"/" => Array.reduce((a, b) => a / b, nums[0]*nums[0], nums),
+		_   => {
+			print("invalid operator")
+			0
+		}
+	}
+
+	print(result)
+}
