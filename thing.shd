@@ -1,0 +1,58 @@
+// sharc thing.shd && gcc thing.s && ./a.out
+// shard doesn't compile yet :(
+// author: slab
+:arch x86_64
+:outname "thing.s"
+
+extern fgets [1:], 4, [#word] -> 4
+extern printf [1:], ? @vargs
+extern memset [1:], 4, #word -> []
+extern malloc [1:], #word -> []
+extern strlen [1:] -> 4
+extern strtok [1:], [1:] -> [1:]
+extern free [1:]
+extern atoi [1:] -> 4
+
+entry loop (%input [1:100]; 1) {
+	$fgets(input, @size input, 0)
+	$printf("%d\n", $calc input)
+	$memset(input, 0, @size input)
+}
+
+calc [1:] line -> 4 {
+	%words [[1:]:] <- $split(line, " ")
+
+	(words.0 = 0 | words.1 = 0) {
+		$printf("Invalid input\n")
+		$free words
+		ret 0
+	}
+
+	%acc 4 <- $atoi(words.1)
+	loop loop (%i <- 1; 'i ++; words.i ~= 0) {
+		(words.0.0 = `+`): 'acc + $atoi(words.i); jmp loop
+		(words.0.0 = `-`): 'acc - $atoi(words.i); jmp loop
+		(words.0.0 = `*`): 'acc * $atoi(words.i); jmp loop
+		(words.0.0 = `/`): 'acc / $atoi(words.i); jmp loop
+		$printf("Invalid operator\n")
+		$free words
+		ret 0
+	}
+
+	$free words
+	ret acc
+}
+
+split [1:] str, [1:] delim -> [[1:]:] {
+	%words [[1:]:] <- $malloc @size #word * $strlen str
+
+	%i 4 <- 0
+	'words.i <- $strtok(str, delim)
+
+	loop (words.i ~= 0) {
+		'words.i <- $strtok(0, delim)
+		'i ++
+	}
+
+	ret words
+}
