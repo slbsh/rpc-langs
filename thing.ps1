@@ -4,8 +4,8 @@
 :loop while($true) {
     $input = $(read-host).split(" ", [stringsplitoptions]::removeemptyentries)
 
-    if ($input.length -lt 2) {
-        write-host "not enough inputs"
+    if ($input.length -lt 2 -or $input[0] -notin @("+", "-", "/", "*")) {
+        write-host "Invalid Input"
         continue
     }
 
